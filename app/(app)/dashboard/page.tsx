@@ -133,7 +133,7 @@ export default async function DashboardPage() {
             hint="on quick checks"
           />
           <StatTile
-            label="Time studied"
+            label="Time set aside"
             value={Math.round(progress.studyMinutes / 60)}
             unit="hr"
             hint="all preparations"

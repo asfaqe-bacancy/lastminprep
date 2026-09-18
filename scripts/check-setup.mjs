@@ -37,7 +37,8 @@ for (const [name, value] of [
   ["NEXT_PUBLIC_SUPABASE_ANON_KEY", anon],
   ["SUPABASE_SERVICE_ROLE_KEY", service],
 ]) {
-  value ? pass(name) : fail(`${name} is not set`, "add it to .env.local");
+  if (value) pass(name);
+  else fail(`${name} is not set`, "add it to .env.local");
 }
 
 if (geminiKey) {
@@ -74,10 +75,14 @@ if (geminiKey) {
       config: { taskType: "RETRIEVAL_DOCUMENT", outputDimensionality: EMBEDDING_DIMENSIONS },
     });
     const dims = r.embeddings?.[0]?.values?.length;
-    dims === EMBEDDING_DIMENSIONS
-      ? pass(`${EMBEDDING_MODEL} returns ${dims} dimensions`)
-      : fail(`embeddings came back with ${dims}, expected ${EMBEDDING_DIMENSIONS}`,
-             "the vector(n) column in the migrations must match");
+    if (dims === EMBEDDING_DIMENSIONS) {
+      pass(`${EMBEDDING_MODEL} returns ${dims} dimensions`);
+    } else {
+      fail(
+        `embeddings came back with ${dims}, expected ${EMBEDDING_DIMENSIONS}`,
+        "the vector(n) column in the migrations must match",
+      );
+    }
   } catch (e) {
     fail(`embeddings: ${String(e?.message).slice(0, 110)}`);
   }
@@ -92,10 +97,14 @@ if (url && service) {
     const { error } = await admin.from(table).select("id").limit(1);
     if (error) missing.push(table);
   }
-  missing.length === 0
-    ? pass(`all ${TABLES.length} tables present`)
-    : fail(`${missing.length} of ${TABLES.length} tables missing (${missing.slice(0, 3).join(", ")}${missing.length > 3 ? ", …" : ""})`,
-           "paste supabase/apply-all.sql into the Supabase SQL Editor and run it");
+  if (missing.length === 0) {
+    pass(`all ${TABLES.length} tables present`);
+  } else {
+    fail(
+      `${missing.length} of ${TABLES.length} tables missing (${missing.slice(0, 3).join(", ")}${missing.length > 3 ? ", …" : ""})`,
+      "paste supabase/apply-all.sql into the Supabase SQL Editor and run it",
+    );
+  }
 
   const { error: rpcError } = await admin.rpc("match_document_chunks", {
     query_embedding: Array(768).fill(0.1),
@@ -103,10 +112,14 @@ if (url && service) {
     match_count: 1,
     p_document_ids: null,
   });
-  rpcError
-    ? fail("match_document_chunks() is missing — retrieval cannot work",
-           "run supabase/apply-all.sql (migration 0006)")
-    : pass("match_document_chunks() exists");
+  if (rpcError) {
+    fail(
+      "match_document_chunks() is missing — retrieval cannot work",
+      "run supabase/apply-all.sql (migration 0006)",
+    );
+  } else {
+    pass("match_document_chunks() exists");
+  }
 
   console.log("\nStorage");
   const { data: buckets, error: bucketError } = await admin.storage.listBuckets();
