@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "check:setup": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/check-setup.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",

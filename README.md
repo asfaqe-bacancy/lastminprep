@@ -63,7 +63,12 @@ and run the files in `supabase/migrations/` **in numeric order**:
 | `0007_vector_index.sql` | The HNSW vector index — **run this last**, once retrieval works |
 | `0008_profiles_trigger.sql` | Creates a profile row for each new user |
 
-With the Supabase CLI instead: `supabase db push`.
+Or paste **`supabase/apply-all.sql`** into the SQL Editor and run it once — it
+is all of the above except `0007`, concatenated in order. With the Supabase CLI
+instead: `supabase db push`.
+
+Then run `npm run check:setup` to confirm it took. PostgREST caches the schema,
+so allow a few seconds after running the SQL.
 
 Every file is safe to re-run, so if one fails halfway you can fix the cause
 and run it again from the top.
@@ -199,8 +204,13 @@ See `docs/EVAL.md` for the retrieval test set to run once keys are in place.
 ## Scripts
 
 ```bash
-npm run dev      # dev server
-npm run build    # production build + typecheck
-npm run start    # serve the build
-npm run lint     # eslint
+npm run dev          # dev server
+npm run build        # production build + typecheck
+npm run start        # serve the build
+npm run lint         # eslint
+npm run check:setup  # verify keys, schema, search function and bucket
 ```
+
+`check:setup` is the fastest way to tell whether a problem is your setup or the
+code. It probes with real `GET` requests rather than `HEAD`, because a
+PostgREST `HEAD` returns no body and so reports a missing table as success.
