@@ -16,6 +16,7 @@ on conflict (id) do update
       file_size_limit = 20971520,
       allowed_mime_types = array['application/pdf'];
 
+drop policy if exists "own files are readable" on storage.objects;
 create policy "own files are readable"
   on storage.objects for select
   using (
@@ -23,6 +24,7 @@ create policy "own files are readable"
     and (storage.foldername(name))[1] = auth.uid()::text
   );
 
+drop policy if exists "own files are insertable" on storage.objects;
 create policy "own files are insertable"
   on storage.objects for insert
   with check (
@@ -30,6 +32,7 @@ create policy "own files are insertable"
     and (storage.foldername(name))[1] = auth.uid()::text
   );
 
+drop policy if exists "own files are deletable" on storage.objects;
 create policy "own files are deletable"
   on storage.objects for delete
   using (

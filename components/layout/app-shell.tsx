@@ -19,7 +19,7 @@ export function AppShell({
 }) {
   return (
     <div className="lg:grid lg:grid-cols-[15.5rem_minmax(0,1fr)]">
-      <Sidebar />
+      <Sidebar signedIn={signedIn} />
       <div className="flex min-h-dvh flex-col">
         <MobileTopBar />
         <main

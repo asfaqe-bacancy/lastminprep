@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { requireUser } from "@/lib/data/auth";
+import { requireApiUser } from "@/lib/data/auth";
 import { getDocument } from "@/lib/data/documents";
 import { processDocument } from "@/lib/documents/pipeline";
 import { simulateProcessing } from "@/lib/demo/simulate";
@@ -15,7 +15,7 @@ export async function POST(
   context: RouteContext<"/api/documents/[id]/process">,
 ) {
   try {
-    const user = await requireUser();
+    const user = await requireApiUser();
     const { id } = await context.params;
 
     const document = await getDocument(id);

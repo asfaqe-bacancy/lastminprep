@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { requireUser } from "@/lib/data/auth";
+import { requireApiUser } from "@/lib/data/auth";
 import {
   getPreparation,
   replaceTopics,
@@ -18,7 +18,7 @@ export async function POST(
   context: RouteContext<"/api/preparations/[id]/plan">,
 ) {
   try {
-    const user = await requireUser();
+    const user = await requireApiUser();
     const { id } = await context.params;
 
     const preparation = await getPreparation(id);

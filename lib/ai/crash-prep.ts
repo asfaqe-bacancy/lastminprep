@@ -107,6 +107,6 @@ function fitToTime(
         ),
       }))
       // If it still doesn't fit, optional topics are the first to go.
-      .filter((topic) => tier.priority !== "optional" || ratio > 0.6),
+      .filter(() => tier.priority !== "optional" || ratio > 0.6),
   }));
 }

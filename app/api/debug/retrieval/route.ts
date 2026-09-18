@@ -1,4 +1,4 @@
-import { requireUser } from "@/lib/data/auth";
+import { requireApiUser } from "@/lib/data/auth";
 import { retrieveChunks } from "@/lib/ai/rag";
 import { handleRouteError, jsonError } from "@/lib/api";
 import { asRecord, requireString } from "@/lib/validation";
@@ -18,7 +18,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    await requireUser();
+    await requireApiUser();
     const body = asRecord(await request.json());
 
     const preparationId = requireString(body.preparationId, "preparationId", {

@@ -1,6 +1,7 @@
 import "server-only";
 
 import { redirect } from "next/navigation";
+import { HttpError } from "@/lib/errors";
 import { isDemoMode } from "@/lib/env";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { DEMO_PROFILE } from "@/lib/demo/fixtures";
@@ -44,5 +45,15 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
 export async function requireUser(): Promise<CurrentUser> {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
+  return user;
+}
+
+/**
+ * Same check for route handlers, where a redirect to the sign-in page would
+ * arrive at a `fetch()` as a confusing HTML response.
+ */
+export async function requireApiUser(): Promise<CurrentUser> {
+  const user = await getCurrentUser();
+  if (!user) throw new HttpError("Sign in to continue.", 401);
   return user;
 }

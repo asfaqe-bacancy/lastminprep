@@ -1,4 +1,4 @@
-import { requireUser } from "@/lib/data/auth";
+import { requireApiUser } from "@/lib/data/auth";
 import { getPreparation } from "@/lib/data/preparations";
 import { streamAnswer } from "@/lib/ai/rag";
 import { isDemoMode, isGeminiConfigured } from "@/lib/env";
@@ -23,7 +23,7 @@ const NEEDS_GEMINI =
  */
 export async function POST(request: Request) {
   try {
-    const user = await requireUser();
+    const user = await requireApiUser();
     const body = asRecord(await request.json());
 
     const preparationId = requireString(body.preparationId, "preparationId", {

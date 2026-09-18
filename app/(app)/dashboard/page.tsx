@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { PageHeader, SectionHeading } from "@/components/common/page-header";
+import { SectionHeading } from "@/components/common/page-header";
 import { DemoNotice } from "@/components/common/demo-notice";
 import { EmptyState } from "@/components/common/empty-state";
 import { PreparationCard } from "@/components/preparation/preparation-card";

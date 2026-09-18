@@ -8,8 +8,20 @@ import {
 } from "@google/genai";
 import { requireGeminiKey } from "@/lib/env";
 
-/** One place to change the models. */
-export const GENERATION_MODEL = "gemini-2.5-flash";
+/**
+ * One place to change the models.
+ *
+ * `gemini-2.5-flash` is not usable here: the API rejects it for accounts
+ * created after it was retired ("no longer available to new users") and points
+ * at the 3.x flash line instead.
+ *
+ * `gemini-3.6-flash` was picked over the newer `gemini-3.8-flash` on measured
+ * behaviour, not version number: 3.8 returned 503 "high demand" on two of
+ * three structured calls, while 3.6 completed three of three at roughly 1.7s
+ * each. For a product built around not wasting the user's minutes, a model
+ * that answers reliably beats one that is newer.
+ */
+export const GENERATION_MODEL = "gemini-3.6-flash";
 export const EMBEDDING_MODEL = "gemini-embedding-001";
 
 /**

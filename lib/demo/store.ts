@@ -330,3 +330,29 @@ export function demoProgress(): ProgressSnapshot {
 export function demoCrashBoard() {
   return structuredClone(DEMO_CRASH_BOARD);
 }
+
+/* ------------------------------------------------------- studied topics */
+
+const globalForStudied = globalThis as typeof globalThis & {
+  __prepsprintStudied?: Set<string>;
+};
+
+function studiedSet(): Set<string> {
+  globalForStudied.__prepsprintStudied ??= new Set();
+  return globalForStudied.__prepsprintStudied;
+}
+
+export function demoMarkTopicStudied(
+  preparationId: string,
+  topicName: string,
+): void {
+  studiedSet().add(`${preparationId}:${topicName.toLowerCase()}`);
+}
+
+export function demoCountStudiedTopics(preparationId: string): number {
+  let count = 0;
+  for (const key of studiedSet()) {
+    if (key.startsWith(`${preparationId}:`)) count += 1;
+  }
+  return count;
+}

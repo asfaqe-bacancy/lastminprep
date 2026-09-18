@@ -1,13 +1,29 @@
 import "server-only";
 
-import type { ProgressSnapshot, TopicPerformance, Verdict } from "@/types";
+import type {
+  PlanSegmentKind,
+  ProgressSnapshot,
+  TopicPerformance,
+  Verdict,
+} from "@/types";
+import { INTERVIEW_LENGTH, QUIZ_LENGTH } from "@/lib/constants";
+import { clampPercent } from "@/lib/format";
 import { isDemoMode } from "@/lib/env";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
+  demoCountStudiedTopics,
+  demoMarkTopicStudied,
   demoProgress,
   demoTopicPerformance,
   noteForScore,
 } from "@/lib/demo/store";
+import {
+  getPreparation,
+  listTopics,
+  updatePreparation,
+} from "./preparations";
+import { listResults } from "./quiz";
+import { getSession, listMessages } from "./interview";
 
 interface AnswerAggregateRow {
   score: number | null;
@@ -107,4 +123,118 @@ function aggregateTopics(rows: AnswerAggregateRow[]): TopicPerformance[] {
       return { ...entry, score, note: noteForScore(score) };
     })
     .sort((a, b) => a.score - b.score);
+}
+
+/* ------------------------------------------------- per-preparation progress */
+
+/**
+ * Records that a topic was actually studied.
+ *
+ * This is the only honest signal we have for the learn segment, so it is
+ * written when an explanation is generated rather than inferred later.
+ */
+export async function markTopicStudied(input: {
+  userId: string;
+  preparationId: string;
+  topicId: string | null;
+  topicName: string;
+  seconds?: number;
+}): Promise<void> {
+  if (isDemoMode()) {
+    demoMarkTopicStudied(input.preparationId, input.topicName);
+    return;
+  }
+  if (!input.topicId) return;
+
+  const supabase = await createSupabaseServerClient();
+  await supabase.from("user_progress").upsert(
+    {
+      user_id: input.userId,
+      preparation_id: input.preparationId,
+      topic_id: input.topicId,
+      time_spent_seconds: input.seconds ?? 60,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "preparation_id,topic_id" },
+  );
+}
+
+async function countStudiedTopics(preparationId: string): Promise<number> {
+  if (isDemoMode()) return demoCountStudiedTopics(preparationId);
+
+  const supabase = await createSupabaseServerClient();
+  const { count } = await supabase
+    .from("user_progress")
+    .select("id", { count: "exact", head: true })
+    .eq("preparation_id", preparationId)
+    .not("topic_id", "is", null);
+
+  return count ?? 0;
+}
+
+/**
+ * Recomputes how prepared someone is, from signals we can actually observe,
+ * and stores it on the preparation.
+ *
+ * Each plan segment contributes in proportion to the minutes it was given, so
+ * a plan that is mostly mock interview moves mostly when the interview
+ * progresses. Segments with no measurable signal are left out of the weighting
+ * rather than counted as complete.
+ */
+export async function recalculateProgress(
+  preparationId: string,
+): Promise<number> {
+  const preparation = await getPreparation(preparationId);
+  if (!preparation) return 0;
+
+  const [results, session, topics, studied] = await Promise.all([
+    listResults(preparationId),
+    getSession(preparationId),
+    listTopics(preparationId),
+    countStudiedTopics(preparationId),
+  ]);
+
+  const interviewAnswers = session
+    ? (await listMessages(session.id)).filter(
+        (message) => message.role === "user",
+      ).length
+    : 0;
+
+  const answered = results.length;
+  const fractions: Partial<Record<PlanSegmentKind, number>> = {
+    learn: topics.length > 0 ? studied / topics.length : undefined,
+    quiz: Math.min(1, answered / QUIZ_LENGTH),
+    interview: session
+      ? session.status === "completed"
+        ? 1
+        : Math.min(1, interviewAnswers / INTERVIEW_LENGTH)
+      : 0,
+    weak_areas: Math.min(1, Math.max(0, answered - QUIZ_LENGTH) / 3),
+    revision: preparation.revision ? 1 : 0,
+  };
+
+  const segments = preparation.plan?.segments ?? [];
+  let weighted = 0;
+  let weight = 0;
+
+  for (const segment of segments) {
+    const fraction = fractions[segment.kind];
+    if (fraction === undefined) continue;
+    weighted += fraction * segment.minutes;
+    weight += segment.minutes;
+  }
+
+  const percent =
+    weight > 0
+      ? clampPercent((weighted / weight) * 100)
+      : clampPercent(Math.min(1, answered / QUIZ_LENGTH) * 100);
+
+  await updatePreparation(preparationId, {
+    progressPercent: percent,
+    status: percent >= 100 ? "completed" : "active",
+    completedAt: percent >= 100 ? new Date().toISOString() : null,
+    startedAt: preparation.startedAt ?? new Date().toISOString(),
+  });
+
+  return percent;
 }

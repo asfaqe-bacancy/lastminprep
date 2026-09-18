@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { FinalRevision, SourceCitation } from "@/types";
+import type { FinalRevision } from "@/types";
 import { sampleChunks } from "@/lib/data/chunks";
 import { buildGroundedContext, toCitations } from "./rag";
 import { buildContextBlock } from "./prompts";
@@ -27,7 +27,6 @@ export async function generateFinalRevision(options: {
 }): Promise<FinalRevision> {
   const base = await sampleChunks(options.preparationId, 16);
 
-  let extra: SourceCitation[] = [];
   let chunks = base;
 
   if (options.weakTopics.length > 0) {
@@ -42,7 +41,6 @@ export async function generateFinalRevision(options: {
         ...base,
         ...retrieved.chunks.filter((chunk) => !seen.has(chunk.chunkId)),
       ];
-      extra = toCitations(retrieved.chunks);
     }
   }
 
@@ -53,7 +51,6 @@ export async function generateFinalRevision(options: {
   }
 
   const citations = toCitations(chunks);
-  void extra;
 
   const response = await generateJson<{
     headline: string;

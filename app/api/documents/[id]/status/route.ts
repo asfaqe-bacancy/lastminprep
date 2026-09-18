@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { requireUser } from "@/lib/data/auth";
+import { requireApiUser } from "@/lib/data/auth";
 import { getDocument } from "@/lib/data/documents";
 import { handleRouteError, jsonError } from "@/lib/api";
 import { isDemoMode } from "@/lib/env";
@@ -9,7 +9,7 @@ export async function GET(
   context: RouteContext<"/api/documents/[id]/status">,
 ) {
   try {
-    const user = await requireUser();
+    const user = await requireApiUser();
     const { id } = await context.params;
 
     const document = await getDocument(id);

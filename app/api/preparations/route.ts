@@ -1,4 +1,4 @@
-import { requireUser } from "@/lib/data/auth";
+import { requireApiUser } from "@/lib/data/auth";
 import { createPreparation } from "@/lib/data/preparations";
 import { derivePreparationTitle } from "@/lib/format";
 import { handleRouteError } from "@/lib/api";
@@ -12,7 +12,7 @@ import {
 
 export async function POST(request: Request) {
   try {
-    const user = await requireUser();
+    const user = await requireApiUser();
     const body = asRecord(await request.json());
 
     const type = requirePreparationType(body.type);

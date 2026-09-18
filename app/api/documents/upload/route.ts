@@ -1,4 +1,4 @@
-import { requireUser } from "@/lib/data/auth";
+import { requireApiUser } from "@/lib/data/auth";
 import { createDocument, updateDocument } from "@/lib/data/documents";
 import { getPreparation } from "@/lib/data/preparations";
 import { uploadDocumentFile } from "@/lib/supabase/storage";
@@ -16,7 +16,7 @@ export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   try {
-    const user = await requireUser();
+    const user = await requireApiUser();
     const form = await request.formData();
 
     const preparationId = requireString(

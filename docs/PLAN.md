@@ -198,3 +198,45 @@ labels, touch targets); responsive refinement; full empty/loading/error coverage
 `GEMINI_API_KEY`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
 `SUPABASE_SERVICE_ROLE_KEY` — plus applying `supabase/migrations/*` and creating
 the `documents` bucket. `.env.example` and `README.md` will spell out each step.
+
+---
+
+## 6. Build status
+
+All twelve phases are built. Deviations from the plan above, and what was
+verified how:
+
+### Changed during the build
+
+| Plan said | Actually done | Why |
+| --- | --- | --- |
+| shadcn/ui on Radix | shadcn `base-nova` on `@base-ui/react` | That is what `shadcn@latest` installs now. Bespoke components were built on top rather than fighting its defaults. |
+| `middleware.ts` | `proxy.ts` | Renamed in Next.js 16; the edge runtime is gone from it, which suits Supabase SSR. |
+| Plan/revision in separate tables | `preparations.plan`, `.revision`, `.crash_board` as jsonb | They are generated whole and read whole; storing them means they reopen without being regenerated. |
+| `documents.status = processing` | Granular `extracting`/`chunking`/`embedding`/`indexing` | The upload screen needs to show which step is running, and this avoids a second column. |
+| — | `document_chunks.preparation_id` and `.user_id` added | RLS then needs no joins, and vector search can be scoped to one preparation cheaply. |
+| — | `lib/demo/*` preview mode | Added so the whole UI could be verified before credentials existed. Doubles as a live-demo fallback. |
+
+### Verified without credentials
+
+- `npm run build` and `tsc --noEmit` clean; `eslint` clean.
+- All 34 routes resolve; every screen renders at 390 / 834 / 1440 px in both themes.
+- **PDF extraction and chunking against real PDFs**, through
+  `/api/debug/document`: 4-page document → 4 page-attributed chunks; forcing
+  `targetChars=900` produced correct recursive splits at sentence boundaries
+  with the overlap carrying the previous chunk's closing sentence.
+- **Retrieval**, through `/api/debug/retrieval`, against the fixture corpus.
+- **The full create flow**: create preparation → upload PDF → processing
+  stages advance → `ready` with page and chunk counts.
+- **Input validation**: bad type and out-of-range time rejected with the
+  messages the UI shows.
+- **Degradation without a key**: AI routes return an actionable 503; the coach
+  still retrieves and displays sources, and says why there is no answer
+  instead of inventing one.
+
+### Needs credentials to verify
+
+Everything that calls Gemini for real, and the Supabase read/write paths:
+plan generation, learn, quiz generation and marking, the interview and its
+report, crash triage, the final review, real embeddings and pgvector search,
+auth, and Storage uploads. `docs/EVAL.md` is the test set to run first.

@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Plus } from "lucide-react";
+import { LogOut, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PRIMARY_NAV, SECONDARY_NAV, isActive } from "./nav-items";
 import { Wordmark } from "./wordmark";
 import { ThemeToggle } from "./theme-toggle";
 
-export function Sidebar() {
+export function Sidebar({ signedIn = false }: { signedIn?: boolean }) {
   const pathname = usePathname();
 
   return (
@@ -71,6 +71,17 @@ export function Sidebar() {
               </Link>
             );
           })}
+          {signedIn && (
+            <form action="/auth/sign-out" method="post">
+              <button
+                type="submit"
+                className="text-muted-foreground hover:bg-sidebar-accent/60 hover:text-foreground flex h-9 w-full items-center gap-2.5 rounded-tight px-2.5 text-sm transition-colors duration-150"
+              >
+                <LogOut className="size-4" aria-hidden />
+                Sign out
+              </button>
+            </form>
+          )}
           <div className="px-2.5 pt-3">
             <ThemeToggle />
           </div>

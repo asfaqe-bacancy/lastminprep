@@ -7,7 +7,7 @@ import { ProcessingStatus } from "@/components/documents/processing-status";
 import { DocumentList } from "@/components/documents/document-list";
 import { PlanTimeline } from "@/components/preparation/plan-timeline";
 import { TopicList } from "@/components/preparation/topic-list";
-import { GeneratePlanButton } from "@/components/preparation/generate-plan-button";
+import { GenerateButton } from "@/components/common/generate-button";
 import { Meter } from "@/components/progress/meter";
 import { requireUser } from "@/lib/data/auth";
 import { getPreparation, listTopics } from "@/lib/data/preparations";
@@ -89,6 +89,26 @@ export default async function PreparationPage(
         )}
       </header>
 
+      {/* Short on time: triage is more useful than a plan (PRD section 18) */}
+      {preparation.availableMinutes <= 60 && (
+        <Link
+          href={`/preparations/${preparation.id}/crash`}
+          className="press border-hairline rounded-surface bg-surface-2 mb-9 flex items-center justify-between gap-4 border p-5"
+        >
+          <span className="min-w-0">
+            <span className="block text-[1.0625rem] font-medium">
+              {formatMinutes(preparation.availableMinutes)} crash prep
+            </span>
+            <span className="text-muted-foreground mt-1 block text-[0.8125rem] leading-relaxed">
+              {preparation.crashBoard
+                ? "Your must-know list, ranked for the time you have."
+                : "Sort the material into must know, important and skip."}
+            </span>
+          </span>
+          <ArrowRight className="text-brand-text size-4 shrink-0" aria-hidden />
+        </Link>
+      )}
+
       {!preparation.plan ? (
         <section className="border-hairline rounded-surface bg-surface mb-9 border p-6">
           <h2 className="text-[1.0625rem] font-medium">
@@ -103,7 +123,12 @@ export default async function PreparationPage(
           </p>
           <div className="mt-6">
             {readyDocuments.length > 0 ? (
-              <GeneratePlanButton preparationId={preparation.id} />
+              <GenerateButton
+                endpoint={`/api/preparations/${preparation.id}/plan`}
+                label="Build my plan"
+                workingLabel="Reading your material"
+                note="Working out what matters most in the time you have…"
+              />
             ) : (
               <Link
                 href="/preparations/new"
