@@ -38,7 +38,7 @@ export async function getProgressSnapshot(): Promise<ProgressSnapshot> {
 
   const supabase = await createSupabaseServerClient();
 
-  const [{ count: completed }, { data: answers }, { data: preparations }] =
+  const [completedResult, { data: answers }, { data: preparations }] =
     await Promise.all([
       supabase
         .from("preparations")
@@ -54,6 +54,20 @@ export async function getProgressSnapshot(): Promise<ProgressSnapshot> {
       supabase.from("preparations").select("available_minutes, status"),
     ]);
 
+  // A HEAD request carries no response body, so a missing table surfaces as
+  // error: null with a null count. Surface that rather than reporting zero.
+  if (completedResult.error) {
+    throw new Error(
+      `Could not load your progress: ${completedResult.error.message}`,
+    );
+  }
+  if (completedResult.count === null) {
+    throw new Error(
+      "Could not load your progress: the database did not return a count. Check that the migrations in supabase/ have been applied.",
+    );
+  }
+  const completed = completedResult.count;
+
   const rows = (answers ?? []) as unknown as AnswerAggregateRow[];
   const scores = rows.map((row) => row.score ?? 0);
   const averageScore =
@@ -66,7 +80,7 @@ export async function getProgressSnapshot(): Promise<ProgressSnapshot> {
     .reduce((sum, prep) => sum + (prep.available_minutes ?? 0), 0);
 
   return {
-    preparationsCompleted: completed ?? 0,
+    preparationsCompleted: completed,
     questionsAnswered: rows.length,
     averageScore,
     studyMinutes,
@@ -163,13 +177,16 @@ async function countStudiedTopics(preparationId: string): Promise<number> {
   if (isDemoMode()) return demoCountStudiedTopics(preparationId);
 
   const supabase = await createSupabaseServerClient();
-  const { count } = await supabase
+  const { count, error } = await supabase
     .from("user_progress")
     .select("id", { count: "exact", head: true })
     .eq("preparation_id", preparationId)
     .not("topic_id", "is", null);
 
-  return count ?? 0;
+  // As above: a HEAD request has no body, so a null count means the query
+  // did not really succeed. Reporting zero would quietly understate progress.
+  if (error || count === null) return 0;
+  return count;
 }
 
 /**

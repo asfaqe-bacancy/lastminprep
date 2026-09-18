@@ -84,7 +84,17 @@ export async function countChunks(preparationId: string): Promise<number> {
     .eq("preparation_id", preparationId);
 
   if (error) throw new Error(`Could not count sections: ${error.message}`);
-  return count ?? 0;
+
+  // A HEAD request carries no response body, so a failure such as a missing
+  // table arrives as error: null with no count rather than as an error.
+  // Treating that as zero would silently report an empty preparation.
+  if (count === null) {
+    throw new Error(
+      "Could not count sections: the database did not return a count. Check that the migrations in supabase/ have been applied.",
+    );
+  }
+
+  return count;
 }
 
 /** Fetches specific chunks by id, for citing a question's sources later. */
